@@ -1,0 +1,19 @@
+# Node.js
+node_modules/
+npm-debug.log
+yarn-error.log
+package-lock.json
+
+# TypeScript
+dist/
+*.tsbuildinfo
+
+# Certificates and sensitive files
+# hko-root-ca.crt
+# .env
+
+# Editor and OS files
+.DS_Store
+.vscode/
+.idea/
+*.log
