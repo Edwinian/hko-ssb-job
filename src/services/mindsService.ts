@@ -3,13 +3,17 @@ import RedisService from './redisService';
 import customAxios from '../customAxios';
 import axios from 'axios';
 import { SSB_LIST } from '../constants';
+import LoggerService from './loggerService';
 
 class MindsService {
     private readonly apiUrl: string = 'https://api.f22services.hko.gov.hk/minds/ssb?site=prod';
     private readonly redisService: RedisService;
+    private readonly loggerService: LoggerService;
+
 
     constructor(redisService?: RedisService) {
         this.redisService = redisService || new RedisService();
+        this.loggerService = LoggerService.create.bind(RedisService)();
     }
 
     async getSignalRequests(): Promise<SignalRequest[]> {
@@ -21,21 +25,21 @@ class MindsService {
                 throw new Error('Invalid response format: SignalRequestList or SignalRequest missing');
             }
 
-            console.log('Total fetch count: ', data.SignalRequestList.SignalRequest.length);
+            this.loggerService.log(`Total fetch count: ${data.SignalRequestList.SignalRequest.length}`);
 
             // Filter out requests that have expired or have no expiry time
             const uniqueRequests = this.getUniqueRequests(data.SignalRequestList.SignalRequest);
-            console.log('uniqueRequests count', uniqueRequests.length);
+            this.loggerService.log(`uniqueRequests count: ${uniqueRequests.length}`);
 
             const validRequests = uniqueRequests.filter(req => {
                 const expiryTtl = this.redisService.getTtlFromExpiryTime(req)
                 return !expiryTtl || expiryTtl > 0
             });
-            console.log('validRequests count', validRequests.length);
+            this.loggerService.log(`validRequests count: ${validRequests.length}`);
 
             return validRequests;
         } catch (error) {
-            console.error('Error fetching signal requests from MINDS API:', error);
+            this.loggerService.log(`Error fetching signal requests from MINDS API: ${error}`);
             if (axios.isAxiosError(error)) {
                 console.error('Axios error details:', {
                     message: error.message,
@@ -64,7 +68,7 @@ class MindsService {
                 }
             }
 
-            console.log(`Rollback request count: ${rollbackRequests.length}`);
+            this.loggerService.log(`Rollback request count: ${rollbackRequests.length}`);
             return rollbackRequests;
         } catch (error) {
             console.error('Error in getFilteredRequests:', error);
@@ -92,7 +96,7 @@ class MindsService {
 
             const signalCodes = filteredRequests.map(request => request.signalCode.toLowerCase());
 
-            console.log(`Total count: ${requests.length}, Cache hits: ${cacheHit}, Cache misses: ${cacheMiss}`);
+            this.loggerService.log(`Total count: ${requests.length}, Cache hits: ${cacheHit}, Cache misses: ${cacheMiss}`);
             return filteredRequests;
         } catch (error) {
             console.error('Error in getFilteredRequests:', error);

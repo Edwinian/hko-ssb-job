@@ -2,28 +2,31 @@ import { createClient, RedisClientType } from 'redis';
 import { SignalRequest } from '../types';
 import { parseDate } from '../utils';
 import { CACHE_KEY } from '../constants';
+import LoggerService from './loggerService';
 
 class RedisService {
+    private readonly loggerService: LoggerService;
     private client: RedisClientType;
     private isReady = false
 
     constructor() {
+        this.loggerService = LoggerService.create.bind(RedisService)();
         this.client = createClient({
             url: 'redis://localhost:6379',
         });
         this.client.on('error', (err) => {
-            console.error('Redis Client Error:', err);
+            this.loggerService.log(`Redis Client Error: ${err}`);
         });
         this.client.on('connect', () => {
-            console.log('Redis client connected');
+            this.loggerService.log('Redis client connected');
         });
         this.client.on('ready', () => {
             this.isReady = true;
-            console.log('Redis client ready');
+            this.loggerService.log('Redis client ready');
         });
         this.client.on('end', () => {
             this.isReady = false;
-            console.log('Redis client disconnected');
+            this.loggerService.log('Redis client disconnected');
         });
         this.connect();
     }
@@ -36,11 +39,11 @@ class RedisService {
 
         if (!this.client.isOpen || !this.isReady) {
             try {
-                console.log('Attempting to connect to Redis...');
+                this.loggerService.log('Attempting to connect to Redis...');
                 await this.client.connect();
-                console.log('Connected to Redis');
+                this.loggerService.log('Connected to Redis');
             } catch (error) {
-                console.error('Failed to connect to Redis:', error);
+                this.loggerService.log(`Failed to connect to Redis: ${error}`);
                 await retry()
             }
 
@@ -65,7 +68,7 @@ class RedisService {
         const keys = await this.getCacheKeysFromRedis();
 
         if (!keys.length) {
-            console.log('No cache keys found');
+            this.loggerService.log('No cache keys found');
             return [];
         }
 
@@ -145,12 +148,6 @@ class RedisService {
             const [day, month, year] = datePart.split('/').map(Number);
             const [hours, minutes] = timePart.split(':').map(Number);
             const expiryDate = new Date(year, month - 1, day, hours, minutes);
-
-            if (isNaN(expiryDate.getTime())) {
-                console.log('Invalid expiry date:', request.expiryTime);
-                return
-            }
-
             const now = new Date();
             const diffInSeconds = Math.floor((expiryDate.getTime() - now.getTime()) / 1000);
 
@@ -179,9 +176,9 @@ class RedisService {
 
         try {
             await this.addCache(key, data, ttlSeconds);
-            console.log(`Cache added for key: ${key}`);
+            this.loggerService.log(`Cache added for key: ${key}`);
         } catch (error) {
-            console.error(`Error adding cache for key ${key}:`, error);
+            this.loggerService.log(`Error adding cache for key ${key}: ${error}`);
             throw error;
         }
     }
@@ -192,7 +189,7 @@ class RedisService {
             const signalKeys = keys.filter(key => key !== CACHE_KEY.Disable_Execute);
 
             if (!signalCode) {
-                console.log('Clearing all caches', signalKeys);
+                this.loggerService.log(`Clearing all caches, excluding ${CACHE_KEY.Disable_Execute}`);
             }
 
             let clearedCount = 0
@@ -201,7 +198,7 @@ class RedisService {
                 clearedCount = await this.clearCaches(signalKeys);
             }
 
-            console.log(`Cleared ${clearedCount} caches`);
+            this.loggerService.log(`Cleared ${clearedCount} caches`);
             return clearedCount;
         } catch (error) {
             console.error(`Error clearing caches for signalCode ${signalCode}:`, error);
@@ -213,7 +210,7 @@ class RedisService {
         try {
             if (this.client.isOpen) {
                 await this.client.quit();
-                console.log('Disconnected from Redis');
+                this.loggerService.log('Disconnected from Redis');
             }
         } catch (error) {
             console.error('Error disconnecting from Redis:', error);

@@ -6,7 +6,7 @@ class LoggerService {
     }
 
     static create<T>(this: new (...args: any[]) => T): LoggerService {
-        return new LoggerService(this.name); // get the name of the class calling it
+        return new LoggerService(this.name);
     }
 
     log(message: string): void {
