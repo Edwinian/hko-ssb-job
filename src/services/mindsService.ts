@@ -1,8 +1,8 @@
-import { SignalResponse, SignalRequest, RollbackRequest } from './types';
+import { SignalResponse, SignalRequest, RollbackRequest } from '../types';
 import RedisService from './redisService';
-import customAxios from './customAxios';
+import customAxios from '../customAxios';
 import axios from 'axios';
-import { SSB_LIST } from './constants';
+import { SSB_LIST } from '../constants';
 
 class MindsService {
     private readonly apiUrl: string = 'https://api.f22services.hko.gov.hk/minds/ssb?site=prod';

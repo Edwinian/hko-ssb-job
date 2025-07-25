@@ -1,8 +1,8 @@
 import express, { Request, Response } from 'express';
 import cors from 'cors';
-import RedisService from './redisService';
-import MindsService from './mindsService';
-import RocketChatService from './rocketChatService';
+import RedisService from './services/redisService';
+import MindsService from './services/mindsService';
+import RocketChatService from './services/rocketChatService';
 import { CACHE_FIELDS } from './constants';
 import { RocketChatResponse, SignalRequest, SignalTimeObject } from './types';
 

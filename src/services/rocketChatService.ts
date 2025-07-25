@@ -1,7 +1,7 @@
-import { SIGNAL_ACTION } from './constants';
-import { Attachment, RocketChatResponse, SignalRequest } from './types';
+import { SIGNAL_ACTION } from '../constants';
+import { Attachment, RocketChatResponse, SignalRequest } from '../types';
 import axios from 'axios';
-import customAxios from './customAxios';
+import customAxios from '../customAxios';
 
 class RocketChatService {
     private readonly webhookUrl: string = 'https://chat.services.hko.gov.hk/hooks/6875c5252849f79b09e8113d/N6LK6YY5hTYk8MNSyeZfHPEuZGuJ2MF7z56bjPrSgyztDjhC';

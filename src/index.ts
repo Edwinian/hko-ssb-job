@@ -1,21 +1,18 @@
-import express, { Request, Response } from 'express';
+import express from 'express';
 import cors from 'cors';
-import SsbService from './ssbService';
+import SsbRouter from './routers/ssbRouter';
 
 const app = express();
 const port = process.env.PORT || 3000;
-const ssbService = new SsbService()
+
+const ssbRouter = new SsbRouter();
 
 app.use(cors());
 app.use(express.json());
 
 // Routes
-app.get('/getAllCacheData', (req: Request, res: Response) => ssbService.getAllCacheData(req, res));
-app.post('/enableExecute', (req: Request, res: Response) => ssbService.enableExecute(req, res));
-app.post('/executeSsbJob', async (req: Request, res: Response) => ssbService.executeSsbJob(req, res));
-app.post('/clearRequestCaches', async (req: Request, res: Response) => ssbService.clearRequestCaches(req, res));
+app.use('/', ssbRouter.getRouter());
 
 app.listen(port, () => {
     console.log(`Server is running on http://localhost:${port}`);
 });
-
