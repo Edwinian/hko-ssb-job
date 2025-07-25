@@ -13,8 +13,8 @@ class SsbService {
     private readonly loggerService: LoggerService;
 
     constructor() {
-        this.redisService = new RedisService();
-        this.mindsService = new MindsService(this.redisService);
+        this.redisService = RedisService.getInstance();
+        this.mindsService = new MindsService();
         this.rocketChatService = new RocketChatService();
         this.loggerService = LoggerService.create.bind(SsbService)();
     }

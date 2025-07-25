@@ -10,10 +10,9 @@ class MindsService {
     private readonly redisService: RedisService;
     private readonly loggerService: LoggerService;
 
-
-    constructor(redisService?: RedisService) {
-        this.redisService = redisService || new RedisService();
-        this.loggerService = LoggerService.create.bind(RedisService)();
+    constructor() {
+        this.redisService = RedisService.getInstance();
+        this.loggerService = LoggerService.create.bind(MindsService)();
     }
 
     async getSignalRequests(): Promise<SignalRequest[]> {
@@ -27,13 +26,12 @@ class MindsService {
 
             this.loggerService.log(`Total fetch count: ${data.SignalRequestList.SignalRequest.length}`);
 
-            // Filter out requests that have expired or have no expiry time
             const uniqueRequests = this.getUniqueRequests(data.SignalRequestList.SignalRequest);
             this.loggerService.log(`uniqueRequests count: ${uniqueRequests.length}`);
 
             const validRequests = uniqueRequests.filter(req => {
-                const expiryTtl = this.redisService.getTtlFromExpiryTime(req)
-                return !expiryTtl || expiryTtl > 0
+                const expiryTtl = this.redisService.getTtlFromExpiryTime(req);
+                return !expiryTtl || expiryTtl > 0;
             });
             this.loggerService.log(`validRequests count: ${validRequests.length}`);
 
@@ -63,7 +61,7 @@ class MindsService {
                 const recentCache = await this.redisService.getRecentCache(request.signalCode);
 
                 if (recentCache && parseInt(request.id) < parseInt(recentCache.id)) {
-                    const rollbackRequest = { ...recentCache, rollbackBy: recentCache.createdBy }
+                    const rollbackRequest = { ...recentCache, rollbackBy: recentCache.createdBy };
                     rollbackRequests.push(rollbackRequest);
                 }
             }
@@ -71,7 +69,7 @@ class MindsService {
             this.loggerService.log(`Rollback request count: ${rollbackRequests.length}`);
             return rollbackRequests;
         } catch (error) {
-            console.error('Error in getFilteredRequests:', error);
+            console.error('Error in getRollbackRequests:', error);
             throw error;
         }
     }
@@ -115,7 +113,7 @@ class MindsService {
                 return parseInt(current.id) > parseInt(latest.id) ? current : latest;
             });
             return latestRequest;
-        }).filter(request => !!request);
+        }).filter(request => !!request) as SignalRequest[];
 
         return uniqueRequests;
     }

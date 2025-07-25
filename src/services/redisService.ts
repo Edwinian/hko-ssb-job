@@ -5,10 +5,12 @@ import { SSB_LIST } from '../constants';
 import LoggerService from './loggerService';
 
 class RedisService {
+    private static instance: RedisService; // Static instance to hold the singleton
     private readonly loggerService: LoggerService;
     private client: RedisClientType;
-    private isReady = false
+    private isReady = false;
 
+    // Private constructor to prevent direct instantiation
     constructor() {
         this.loggerService = LoggerService.create.bind(RedisService)();
         this.client = createClient({
@@ -31,6 +33,15 @@ class RedisService {
         this.connect();
     }
 
+    // Static method to get the singleton instance
+    public static getInstance(): RedisService {
+        if (!RedisService.instance) {
+            RedisService.instance = new RedisService();
+        }
+        return RedisService.instance;
+    }
+
+    // Rest of the RedisService methods remain unchanged
     private async connect(): Promise<void> {
         const retry = async () => {
             await new Promise(resolve => setTimeout(resolve, 2000));
@@ -44,11 +55,11 @@ class RedisService {
                 this.loggerService.log('Connected to Redis');
             } catch (error) {
                 this.loggerService.log(`Failed to connect to Redis: ${error}`);
-                await retry()
+                await retry();
             }
 
             if (!this.client.isOpen || !this.isReady) {
-                await retry()
+                await retry();
             }
         }
     }
@@ -56,7 +67,7 @@ class RedisService {
     async getCacheKeysFromRedis(signalCode: string = ""): Promise<string[]> {
         try {
             const keys = await this.client.keys('*');
-            const signalKeys = signalCode ? keys.filter(key => key.includes(signalCode)) : keys
+            const signalKeys = signalCode ? keys.filter(key => key.includes(signalCode)) : keys;
             return signalKeys;
         } catch (error) {
             console.error(`Error fetching keys for signalCode ${signalCode}:`, error);
@@ -75,7 +86,6 @@ class RedisService {
         const cacheData = await Promise.all(keys.map(key => this.getCacheData(key)));
         const filteredData = cacheData.filter((data): data is SignalRequest => !!data && typeof data !== 'string');
 
-        // Sort by creationTime['#content'] in descending order (most recent first)
         return filteredData.sort((a, b) => {
             const dateA = a.creationTime?.['#content'] ? parseDate(a.creationTime['#content']) : new Date(0);
             const dateB = b.creationTime?.['#content'] ? parseDate(b.creationTime['#content']) : new Date(0);
@@ -93,54 +103,50 @@ class RedisService {
                     return parsedData;
                 } catch (parseError) {
                     console.error(`Error parsing JSON for key ${key}:`, parseError);
-                    return
+                    return;
                 }
             }
-            return
+            return;
         } catch (error) {
             console.error(`Error getting cache for key ${key}:`, error);
-            return
+            return;
         }
     }
 
     async getRecentCache(signalCode: string): Promise<SignalRequest | undefined> {
         try {
-
             const keys = await this.getCacheKeysFromRedis(signalCode);
 
             if (!keys.length) {
-                return
+                return;
             }
 
-            // Fetch all cache values concurrently
             const caches = await Promise.all(
                 keys.map(async (key) => await this.getCacheData(key))
             );
 
-            // Filter out null results and sort by creationTime['#content'] (descending)
             const validCaches = caches.filter((cache): cache is SignalRequest => cache !== null);
 
             if (!validCaches.length) {
-                return
+                return;
             }
 
-            // Sort by creationTime['#content'] to get the most recent
             const mostRecentCache = validCaches.sort((a, b) => {
                 const dateA = new Date(a.creationTime['#content']);
                 const dateB = new Date(b.creationTime['#content']);
-                return dateB.getTime() - dateA.getTime(); // Descending order (most recent first)
+                return dateB.getTime() - dateA.getTime();
             })[0];
 
             return mostRecentCache;
         } catch (error) {
             console.error(`Error fetching caches for signalCode ${signalCode}:`, error);
-            return
+            return;
         }
     }
 
     getTtlFromExpiryTime(request: SignalRequest): number | undefined {
         if (!request.expiryTime) {
-            return
+            return;
         }
 
         try {
@@ -151,10 +157,10 @@ class RedisService {
             const now = new Date();
             const diffInSeconds = Math.floor((expiryDate.getTime() - now.getTime()) / 1000);
 
-            return diffInSeconds
+            return diffInSeconds;
         } catch (error) {
             console.error('Error parsing expiry time:', error);
-            return
+            return;
         }
     }
 
@@ -167,11 +173,11 @@ class RedisService {
     }
 
     async clearCaches(keys: string[]): Promise<number> {
-        return await this.client.del(keys)
+        return await this.client.del(keys);
     }
 
     async addRequestCache(request: SignalRequest, ttlSeconds?: number): Promise<void> {
-        const key = request.signalCode
+        const key = request.signalCode;
         const data = JSON.stringify(request);
 
         try {
@@ -192,9 +198,9 @@ class RedisService {
             const targetSignalCodes = Object.keys(SSB_LIST);
             const keys = await this.getCacheKeysFromRedis(signalCode);
             const signalKeys = keys.filter(key => targetSignalCodes.includes(key.toLowerCase()));
-            let clearedCount = 0
+            let clearedCount = 0;
 
-            if (!!signalKeys.length) {
+            if (signalKeys.length) {
                 clearedCount = await this.clearCaches(signalKeys);
             }
 
