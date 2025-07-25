@@ -21,8 +21,8 @@ class SsbRouter {
         this.router.post('/executeSsbJob', (req: Request, res: Response) =>
             this.ssbService.executeSsbJob(req, res)
         );
-        this.router.post('/clearRequestCaches', (req: Request, res: Response) =>
-            this.ssbService.clearRequestCaches(req, res)
+        this.router.post('/clearSignalCaches', (req: Request, res: Response) =>
+            this.ssbService.clearSignalCaches(req, res)
         );
     }
 

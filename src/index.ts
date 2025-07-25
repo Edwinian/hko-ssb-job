@@ -11,7 +11,7 @@ app.use(cors());
 app.use(express.json());
 
 // Routes
-app.use('/', ssbRouter.getRouter());
+app.use('/ssb', ssbRouter.getRouter());
 
 app.listen(port, () => {
     console.log(`Server is running on http://localhost:${port}`);

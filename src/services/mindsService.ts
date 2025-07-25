@@ -94,8 +94,6 @@ class MindsService {
                 filteredRequests.push(request);
             }
 
-            const signalCodes = filteredRequests.map(request => request.signalCode.toLowerCase());
-
             this.loggerService.log(`Total count: ${requests.length}, Cache hits: ${cacheHit}, Cache misses: ${cacheMiss}`);
             return filteredRequests;
         } catch (error) {

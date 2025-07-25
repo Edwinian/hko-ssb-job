@@ -19,8 +19,8 @@ class SsbService {
         this.loggerService = LoggerService.create.bind(SsbService)();
     }
 
-    async clearRequestCaches(req: Request, res: Response) {
-        const clearedCount = await this.redisService.clearRequestCaches();
+    async clearSignalCaches(req: Request, res: Response) {
+        const clearedCount = await this.redisService.clearSignalCaches();
         const message = `Cleared ${clearedCount} caches`;
         this.loggerService.log(message);
         res.status(200).json({ message: this.loggerService.getMessage(message) });
@@ -94,7 +94,7 @@ class SsbService {
                             const sendResponse = await sendRequest(request);
 
                             if (sendResponse?.data.success) {
-                                await this.redisService.clearRequestCaches(request.signalCode);
+                                await this.redisService.clearSignalCaches(request.signalCode);
                                 await this.redisService.addRequestCache(request);
                                 this.loggerService.log(`Successfully processed request with signalCode: ${request.signalCode}`);
                             }

@@ -1,7 +1,7 @@
 import { createClient, RedisClientType } from 'redis';
 import { SignalRequest } from '../types';
 import { parseDate } from '../utils';
-import { CACHE_KEY } from '../constants';
+import { SSB_LIST } from '../constants';
 import LoggerService from './loggerService';
 
 class RedisService {
@@ -183,22 +183,22 @@ class RedisService {
         }
     }
 
-    async clearRequestCaches(signalCode?: string): Promise<number> {
+    async clearSignalCaches(signalCode?: string): Promise<number> {
+        if (!signalCode) {
+            this.loggerService.log(`Clearing all signal caches`);
+        }
+
         try {
+            const targetSignalCodes = Object.keys(SSB_LIST);
             const keys = await this.getCacheKeysFromRedis(signalCode);
-            const signalKeys = keys.filter(key => key !== CACHE_KEY.Disable_Execute);
-
-            if (!signalCode) {
-                this.loggerService.log(`Clearing all caches, excluding ${CACHE_KEY.Disable_Execute}`);
-            }
-
+            const signalKeys = keys.filter(key => targetSignalCodes.includes(key.toLowerCase()));
             let clearedCount = 0
 
             if (!!signalKeys.length) {
                 clearedCount = await this.clearCaches(signalKeys);
             }
 
-            this.loggerService.log(`Cleared ${clearedCount} caches`);
+            this.loggerService.log(`Cleared ${clearedCount} signal caches`);
             return clearedCount;
         } catch (error) {
             console.error(`Error clearing caches for signalCode ${signalCode}:`, error);
