@@ -2,18 +2,18 @@ import { SignalRequest, RocketChatResponse, SignalTimeObject } from './types';
 import RedisService from './redisService';
 
 import { CACHE_FIELDS, CACHE_KEY } from './constants';
-import DataService from './dataService';
+import MindsService from './mindsService';
 import RocketChatService from './rocketChatService';
 import { Request, Response } from 'express';
 
-class ApiService {
+class SsbService {
     private readonly redisService: RedisService;
-    private readonly dataService: DataService;
+    private readonly mindsService: MindsService;
     private readonly rocketChatService: RocketChatService;
 
     constructor() {
         this.redisService = new RedisService();
-        this.dataService = new DataService(this.redisService);
+        this.mindsService = new MindsService(this.redisService);
         this.rocketChatService = new RocketChatService();
     }
 
@@ -69,9 +69,9 @@ class ApiService {
 
             const execute = async (): Promise<SignalRequest[]> => {
                 try {
-                    const requests = await this.dataService.getSignalRequests();
-                    const rollbackRequests = await this.dataService.getRollbackRequests(requests);
-                    const filteredRequests = await this.dataService.getFilteredRequests(requests);
+                    const requests = await this.mindsService.getSignalRequests();
+                    const rollbackRequests = await this.mindsService.getRollbackRequests(requests);
+                    const filteredRequests = await this.mindsService.getFilteredRequests(requests);
 
                     await Promise.all(filteredRequests.map(async (request) => {
                         const sendResponse = await sendRequest(request);
@@ -102,4 +102,4 @@ class ApiService {
     }
 }
 
-export default ApiService;
+export default SsbService;

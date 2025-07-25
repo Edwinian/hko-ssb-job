@@ -1,7 +1,7 @@
 import express, { Request, Response } from 'express';
 import cors from 'cors';
 import RedisService from './redisService';
-import DataService from './dataService';
+import MindsService from './mindsService';
 import RocketChatService from './rocketChatService';
 import { CACHE_FIELDS } from './constants';
 import { RocketChatResponse, SignalRequest, SignalTimeObject } from './types';
@@ -16,7 +16,7 @@ app.use(express.json());
 
 // Initialize services
 const redisService = new RedisService();
-const dataService = new DataService();
+const mindsService = new MindsService();
 const rocketChatService = new RocketChatService();
 
 // Define the executeSsbJob route
@@ -45,9 +45,9 @@ app.post('/executeSsbJob', async (req: Request, res: Response) => {
 
         const execute = async () => {
             try {
-                const requests = await dataService.getSignalRequests();
-                const rollbackRequests = await dataService.getRollbackRequests(requests);
-                const filteredRequests = await dataService.getFilteredRequests(requests);
+                const requests = await mindsService.getSignalRequests();
+                const rollbackRequests = await mindsService.getRollbackRequests(requests);
+                const filteredRequests = await mindsService.getFilteredRequests(requests);
 
                 await Promise.all(filteredRequests.map(async (request) => {
                     const sendResponse = await sendRequest(request);

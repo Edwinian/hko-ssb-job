@@ -4,7 +4,7 @@ import customAxios from './customAxios';
 import axios from 'axios';
 import { SSB_LIST } from './constants';
 
-class DataService {
+class MindsService {
     private readonly apiUrl: string = 'https://api.f22services.hko.gov.hk/minds/ssb?site=prod';
     private readonly redisService: RedisService;
 
@@ -119,4 +119,4 @@ class DataService {
     }
 }
 
-export default DataService;
+export default MindsService;
