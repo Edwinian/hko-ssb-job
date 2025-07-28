@@ -3,7 +3,7 @@ import { Agent } from 'https';
 import * as fs from 'fs';
 import * as path from 'path';
 
-const caCertPath = path.join(__dirname, 'hko-root-ca.crt');
+const caCertPath = path.join(__dirname, '../hko-root-ca.crt');
 const caCert = fs.readFileSync(caCertPath, 'utf-8');
 
 if (!caCert) {

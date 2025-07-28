@@ -69,3 +69,38 @@ export interface Attachment {
   video_url: string; // URL for a video file
   fields: Partial<AttachmentField>[]; // Array of field objects for tables/columns
 }
+
+export interface SpecialWeatherTip {
+  IssueDate: string; // e.g., "20250724"
+  IssueTime: string; // e.g., "1820"
+  ValidDate: string;
+  ValidTime: string;
+  MsgTag: string;
+  MsgUrl: boolean; // e.g., false
+  MsgContent: string; // e.g., "測試2"
+  MsgSeq: number; // e.g., 1
+  WeatherHeadline: boolean; // e.g., true
+  Action: string; // e.g., "Update"
+  TwitterPost: string;
+  WeiboPost: string;
+  MsgTwitter: string;
+  MsgWeibo: string;
+  TopMost: boolean[]; // e.g., [false, false]
+  IsPushNoti: boolean[]; // e.g., [true, true]
+  Unchange: string;
+}
+
+export interface BulletinSubmit {
+  sendTime: string;
+  submitContent: string;
+  status: string;
+  bullCode: string;
+  bullName: string;
+  snapId: number;
+  id: number;
+  active: string;
+  createdBy: string;
+  lastUpdatedTime: string;
+  creationTime: string;
+  lastUpdatedBy: string;
+}
