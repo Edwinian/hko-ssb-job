@@ -1,7 +1,4 @@
 import { createClient, RedisClientType } from 'redis';
-import { SignalRequest } from '../types';
-import { parseDate } from '../utils';
-import { SSB_LIST } from '../constants';
 import LoggerService from './loggerService';
 
 class RedisService {

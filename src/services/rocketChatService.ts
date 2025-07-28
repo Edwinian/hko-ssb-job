@@ -1,5 +1,5 @@
 import { SIGNAL_ACTION } from '../constants';
-import { Attachment, RocketChatResponse, SignalRequest } from '../types';
+import { Attachment, RocketChatResponse, SignalRequest, SpecialWeatherTip } from '../types';
 import axios from 'axios';
 import customAxios from '../customAxios';
 
@@ -119,6 +119,39 @@ class RocketChatService {
         return `預報員${ct}${utter}${followUtter}${signalactiondesc}${signaldesc}${followsignaldesc}。\n`;
     }
 
+    private convertToChineseTime(time: string): string | undefined {
+        try {
+            if (!time) {
+                return "";
+            }
+
+            if (!/^\d{4}$/.test(time)) {
+                throw new Error(`Invalid IssueTime format: ${time}. Expected HHMM.`);
+            }
+
+            const hours = parseInt(time.slice(0, 2), 10);
+            const minutes = time.slice(2, 4);
+
+            const period = hours < 12 ? '上午' : '下午';
+            const formattedHours = (hours % 12 || 12).toString().padStart(2, '0');
+            return `${period}${formattedHours}:${minutes}`;
+        } catch (error: any) {
+            console.warn(`Failed to convert to Chinese time format: ${error.message}`);
+            return "";
+        }
+    }
+
+    private get_tip_title(tip: SpecialWeatherTip): string {
+        const activeTime = this.convertToChineseTime(tip.IssueTime);
+        const expiryTime = this.convertToChineseTime(tip.ValidTime);
+        const tipcreationtime = this.convertDate2(tip.creationTime);
+        const creationTimeDesc = this.getTimeDesc(tipcreationtime);
+        const ct = creationTimeDesc ? `(${creationTimeDesc})` : '';
+        const followsignaldesc = expiryTime ? `，有效時間至${expiryTime}` : '';
+
+        return `預報員${ct}話﹕${activeTime}出以下特別天氣提示${followsignaldesc}: \n ${tip.MsgContent}`;
+    }
+
     async sendMessage(payload: {
         text: string;
         attachments?: Partial<Attachment>[];
@@ -145,6 +178,19 @@ class RocketChatService {
             }
             throw error;
         }
+    }
+
+    async sendTipMessage(tip: SpecialWeatherTip): Promise<RocketChatResponse> {
+        const attachment: Partial<Attachment> = {
+            title: tip.BullCode,
+            text: tip.MsgContent,
+            color: tip.WeatherHeadline ? '#FF0000' : '#0000FF',
+        }
+        const payload = {
+            text: this.get_tip_title(tip),
+            attachments: [attachment],
+        }
+        return await this.sendMessage(payload);
     }
 
     async sendSignalMessage(signalRequest: SignalRequest, isRollback: boolean = false): Promise<RocketChatResponse> {

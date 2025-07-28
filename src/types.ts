@@ -89,7 +89,10 @@ export interface SpecialWeatherTip {
   TopMost: boolean[]; // e.g., [false, false]
   IsPushNoti: boolean[]; // e.g., [true, true]
   Unchange: string;
-  BullCode: SWT_BULLETIN_CODE
+  BullCode: SWT_BULLETIN_CODE;
+  sendTime: string;
+  creationTime: string;
+  createdBy: string;
 }
 
 export interface BulletinSubmit {
@@ -103,6 +106,13 @@ export interface BulletinSubmit {
   active: string;
   createdBy: string;
   lastUpdatedTime: string;
-  creationTime: string;
+  creationTime: BulletinCreationTime;
   lastUpdatedBy: string;
+}
+
+export interface BulletinCreationTime {
+  _: string; // e.g., '2025-07-28 15:27:50.0'
+  $: {
+    class: string; // e.g., 'sql-timestamp'
+  };
 }

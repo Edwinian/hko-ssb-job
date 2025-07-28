@@ -69,7 +69,7 @@ class SwtService {
 
     async executeSWTJob(req: Request, res: Response) {
         try {
-            const sendRequest = async ({ BullCode, MsgContent, WeatherHeadline }: SpecialWeatherTip): Promise<RocketChatResponse | undefined> => {
+            const sendRequest = async (tip: SpecialWeatherTip): Promise<RocketChatResponse | undefined> => {
                 const _handleSendFail = (BullCode: SWT_BULLETIN_CODE, error?: unknown) => {
                     let message = `Error processing tip: ${BullCode}`
 
@@ -81,24 +81,15 @@ class SwtService {
                 };
 
                 try {
-                    const attachment = {
-                        title: BullCode,
-                        text: MsgContent,
-                        color: WeatherHeadline ? '#FF0000' : '#0000FF',
-                    }
-                    const payload = {
-                        text: '特別天氣提示',
-                        attachments: [attachment],
-                    }
-                    const sendResponse = await this.rocketChatService.sendMessage(payload);
+                    const sendResponse = await this.rocketChatService.sendTipMessage(tip);
 
                     if (!sendResponse.data.success) {
-                        _handleSendFail(BullCode);
+                        _handleSendFail(tip.BullCode);
                     }
 
                     return sendResponse;
                 } catch (error) {
-                    _handleSendFail(BullCode, error);
+                    _handleSendFail(tip.BullCode, error);
                 }
             };
 
@@ -140,12 +131,8 @@ class SwtService {
     }
 
     async parseBulletinXml(
-        { id, submitContent, bullCode, status }: BulletinSubmit
+        { id, submitContent, bullCode, sendTime, creationTime, createdBy }: BulletinSubmit
     ): Promise<SpecialWeatherTip[]> {
-        if (status === Bulletin_Status.PROCESSED) {
-            return [];
-        }
-
         try {
             // Decode base64 to UTF-8 string
             const decodedString = Buffer.from(submitContent, 'base64').toString('utf-8');
@@ -181,6 +168,7 @@ class SwtService {
                     ? message.IsPushNoti.map((val: string) => val === 'true')
                     : [message.IsPushNoti === 'true'],
                 Unchange: message.Unchange || '',
+                sendTime, creationTime: creationTime._, createdBy
             }))
         } catch (error: any) {
             throw new Error(`Failed to decode base64 or parse XML: ${error.message}`);
@@ -189,8 +177,9 @@ class SwtService {
 
     async getSpecialWeatherTips(): Promise<SpecialWeatherTip[]> {
         const data = new URLSearchParams();
+        const bulletinCodes = Object.values(SWT_BULLETIN_CODE)
 
-        for (const code of Object.values(SWT_BULLETIN_CODE)) {
+        for (const code of bulletinCodes) {
             data.append('bulletinCodes', code);
         }
 
