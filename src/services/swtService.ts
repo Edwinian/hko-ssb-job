@@ -8,7 +8,8 @@ import RocketChatService from './rocketChatService';
 import { SWT_BULLETIN_CODE } from '../constants';
 
 class SwtService {
-    private readonly apiUrl: string = 'http://mindsdev1:8080/adminConsole/rest/bulletin/BulletinService/findStoppableSnapshotWithDetails'
+    //  prod = vega2, dev = mindsdev1
+    private readonly apiUrl: string = 'http://vega2:8080/adminConsole/rest/bulletin/BulletinService/findStoppableSnapshotWithDetails'
     private readonly redisService: RedisService;
     private readonly loggerService: LoggerService;
     private readonly rocketChatService: RocketChatService;
