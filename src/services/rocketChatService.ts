@@ -86,7 +86,7 @@ class RocketChatService {
         return `${tmrtoday}${h}:${m}`;
     }
 
-    private get_message_title(signalRequest: SignalRequest, isRollback: boolean = false): string {
+    private get_signal_title(signalRequest: SignalRequest, isRollback: boolean = false): string {
         const signalAction = signalRequest.action.toLowerCase();
         const signaldesc = this.SIGNAL_DESCRIPTION[signalRequest.signalName] || signalRequest.signalName;
         const signalactiondesc = this.SIGNAL_DESCRIPTION[signalAction] || signalAction;
@@ -159,7 +159,7 @@ class RocketChatService {
         }
 
         const payload = {
-            text: this.get_message_title(signalRequest, isRollback),
+            text: this.get_signal_title(signalRequest, isRollback),
             attachments: [attachment],
         };
 

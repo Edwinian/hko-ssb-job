@@ -1,10 +1,11 @@
 import { SignalRequest, RocketChatResponse, SignalTimeObject } from '../types';
 import RedisService from './redisService';
-import { CACHE_FIELDS, CACHE_KEY } from '../constants';
+import { CACHE_FIELDS, CACHE_KEY, SSB_LIST } from '../constants';
 import MindsService from './mindsService';
 import RocketChatService from './rocketChatService';
 import { Request, Response } from 'express';
 import LoggerService from './loggerService';
+import { parseDate } from '../utils';
 
 class SsbService {
     private readonly redisService: RedisService;
@@ -19,15 +20,45 @@ class SsbService {
         this.loggerService = LoggerService.create.bind(SsbService)();
     }
 
-    async clearSignalCaches(req: Request, res: Response) {
-        const clearedCount = await this.redisService.clearSignalCaches();
-        const message = `Cleared ${clearedCount} caches`;
-        this.loggerService.log(message);
-        res.status(200).json({ message: this.loggerService.getMessage(message) });
+    async clearSignalCaches(signalCode?: string): Promise<number> {
+        if (!signalCode) {
+            this.loggerService.log(`Clearing all signal caches`);
+        }
+
+        try {
+            const targetSignalCodes = Object.keys(SSB_LIST);
+            const keys = await this.redisService.getCacheKeysFromRedis(signalCode);
+            const signalKeys = keys.filter(key => targetSignalCodes.includes(key.toLowerCase()));
+            let clearedCount = 0;
+
+            if (signalKeys.length) {
+                clearedCount = await this.redisService.clearCaches(signalKeys);
+            }
+
+            this.loggerService.log(`Cleared ${clearedCount} signal caches`);
+            return clearedCount;
+        } catch (error) {
+            console.error(`Error clearing caches for signalCode ${signalCode}:`, error);
+            throw error;
+        }
     }
 
     async getAllCacheData(req: Request, res: Response) {
-        const results = await this.redisService.getAllCacheData();
+        const keys = await this.redisService.getCacheKeysFromRedis();
+
+        if (!keys.length) {
+            this.loggerService.log('No cache keys found');
+            return [];
+        }
+
+        const cacheData = await Promise.all(keys.map(key => this.redisService.getCacheData<SignalRequest>(key)));
+        const filteredData = cacheData.filter((data) => !!data && typeof data !== 'string');
+
+        const results = filteredData.sort((a, b) => {
+            const dateA = a.creationTime?.['#content'] ? parseDate(a.creationTime['#content']) : new Date(0);
+            const dateB = b.creationTime?.['#content'] ? parseDate(b.creationTime['#content']) : new Date(0);
+            return dateB.getTime() - dateA.getTime();
+        });
         const message = 'Retrieved all cache data';
         this.loggerService.log(message);
         res.status(200).json(results);
@@ -50,7 +81,7 @@ class SsbService {
 
     async executeSsbJob(req: Request, res: Response) {
         try {
-            const disableCache = await this.redisService.getCacheData(CACHE_KEY.Disable_Execute);
+            const disableCache = await this.redisService.getCacheData<SignalRequest>(CACHE_KEY.Disable_Execute);
 
             if (disableCache) {
                 const message = 'Execution is disabled';
@@ -94,8 +125,8 @@ class SsbService {
                             const sendResponse = await sendRequest(request);
 
                             if (sendResponse?.data.success) {
-                                await this.redisService.clearSignalCaches(request.signalCode);
-                                await this.redisService.addRequestCache(request);
+                                await this.clearSignalCaches(request.signalCode);
+                                await this.redisService.addCache(request.signalCode, request);
                                 this.loggerService.log(`Successfully processed request with signalCode: ${request.signalCode}`);
                             }
                         })

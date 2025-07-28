@@ -1,13 +1,16 @@
 import { Router, Request, Response } from 'express';
 import SsbService from '../services/ssbService';
+import LoggerService from '../services/loggerService';
 
 class SsbRouter {
     private router: Router;
     private ssbService: SsbService;
+    private loggerService: LoggerService;
 
     constructor() {
         this.router = Router();
         this.ssbService = new SsbService();
+        this.loggerService = LoggerService.create.bind(SsbRouter)();
         this.initializeRoutes();
     }
 
@@ -21,8 +24,13 @@ class SsbRouter {
         this.router.post('/executeSsbJob', (req: Request, res: Response) =>
             this.ssbService.executeSsbJob(req, res)
         );
-        this.router.post('/clearSignalCaches', (req: Request, res: Response) =>
-            this.ssbService.clearSignalCaches(req, res)
+        this.router.post('/clearSignalCaches', async (req: Request, res: Response) => {
+            const clearedCount = await this.ssbService.clearSignalCaches();
+            const message = `Cleared ${clearedCount} caches`;
+            this.loggerService.log(message);
+            res.status(200).json({ message: this.loggerService.getMessage(message) });
+
+        }
         );
     }
 

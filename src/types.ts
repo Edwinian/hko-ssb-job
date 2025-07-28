@@ -1,4 +1,4 @@
-import { SIGNAL_ACTION } from './constants';
+import { SIGNAL_ACTION, SWT_BULLETIN_CODE } from './constants';
 
 export interface SignalResponse {
   SignalRequestList: SignalRequestList
@@ -71,6 +71,7 @@ export interface Attachment {
 }
 
 export interface SpecialWeatherTip {
+  id: number;
   IssueDate: string; // e.g., "20250724"
   IssueTime: string; // e.g., "1820"
   ValidDate: string;
@@ -88,13 +89,14 @@ export interface SpecialWeatherTip {
   TopMost: boolean[]; // e.g., [false, false]
   IsPushNoti: boolean[]; // e.g., [true, true]
   Unchange: string;
+  BullCode: SWT_BULLETIN_CODE
 }
 
 export interface BulletinSubmit {
   sendTime: string;
   submitContent: string;
   status: string;
-  bullCode: string;
+  bullCode: SWT_BULLETIN_CODE;
   bullName: string;
   snapId: number;
   id: number;

@@ -64,42 +64,24 @@ class RedisService {
         }
     }
 
-    async getCacheKeysFromRedis(signalCode: string = ""): Promise<string[]> {
+    async getCacheKeysFromRedis(likeQuery: string = ""): Promise<string[]> {
         try {
             const keys = await this.client.keys('*');
-            const signalKeys = signalCode ? keys.filter(key => key.includes(signalCode)) : keys;
-            return signalKeys;
+            const filteredKeys = likeQuery ? keys.filter(key => key.includes(likeQuery)) : keys;
+            return filteredKeys;
         } catch (error) {
-            console.error(`Error fetching keys for signalCode ${signalCode}:`, error);
+            console.error(`Error fetching keys for ${likeQuery}:`, error);
             return [];
         }
     }
 
-    async getAllCacheData(): Promise<SignalRequest[]> {
-        const keys = await this.getCacheKeysFromRedis();
-
-        if (!keys.length) {
-            this.loggerService.log('No cache keys found');
-            return [];
-        }
-
-        const cacheData = await Promise.all(keys.map(key => this.getCacheData(key)));
-        const filteredData = cacheData.filter((data): data is SignalRequest => !!data && typeof data !== 'string');
-
-        return filteredData.sort((a, b) => {
-            const dateA = a.creationTime?.['#content'] ? parseDate(a.creationTime['#content']) : new Date(0);
-            const dateB = b.creationTime?.['#content'] ? parseDate(b.creationTime['#content']) : new Date(0);
-            return dateB.getTime() - dateA.getTime();
-        });
-    }
-
-    async getCacheData(key: string): Promise<SignalRequest | undefined> {
+    async getCacheData<CacheData>(key: string): Promise<CacheData | undefined> {
         try {
             const data = await this.client.get(key);
 
             if (data) {
                 try {
-                    const parsedData = JSON.parse(data) as SignalRequest;
+                    const parsedData = JSON.parse(data)
                     return parsedData;
                 } catch (parseError) {
                     console.error(`Error parsing JSON for key ${key}:`, parseError);
@@ -113,103 +95,22 @@ class RedisService {
         }
     }
 
-    async getRecentCache(signalCode: string): Promise<SignalRequest | undefined> {
-        try {
-            const keys = await this.getCacheKeysFromRedis(signalCode);
+    async addCache<Data>(key: string, data: Data, ttlSeconds?: number): Promise<void> {
+        const stringifiedData = typeof data !== 'string' ? JSON.stringify(data) : data;
 
-            if (!keys.length) {
-                return;
-            }
-
-            const caches = await Promise.all(
-                keys.map(async (key) => await this.getCacheData(key))
-            );
-
-            const validCaches = caches.filter((cache): cache is SignalRequest => cache !== null);
-
-            if (!validCaches.length) {
-                return;
-            }
-
-            const mostRecentCache = validCaches.sort((a, b) => {
-                const dateA = new Date(a.creationTime['#content']);
-                const dateB = new Date(b.creationTime['#content']);
-                return dateB.getTime() - dateA.getTime();
-            })[0];
-
-            return mostRecentCache;
-        } catch (error) {
-            console.error(`Error fetching caches for signalCode ${signalCode}:`, error);
-            return;
-        }
-    }
-
-    getTtlFromExpiryTime(request: SignalRequest): number | undefined {
-        if (!request.expiryTime) {
-            return;
-        }
-
-        try {
-            const [datePart, timePart] = request.expiryTime.split(' ');
-            const [day, month, year] = datePart.split('/').map(Number);
-            const [hours, minutes] = timePart.split(':').map(Number);
-            const expiryDate = new Date(year, month - 1, day, hours, minutes);
-            const now = new Date();
-            const diffInSeconds = Math.floor((expiryDate.getTime() - now.getTime()) / 1000);
-
-            return diffInSeconds;
-        } catch (error) {
-            console.error('Error parsing expiry time:', error);
-            return;
-        }
-    }
-
-    async addCache(key: string, data: string, ttlSeconds?: number): Promise<void> {
         if (ttlSeconds) {
-            await this.client.setEx(key, ttlSeconds, data);
+            await this.client.setEx(key, ttlSeconds, stringifiedData);
         } else {
-            await this.client.set(key, data);
+            await this.client.set(key, stringifiedData);
         }
     }
 
     async clearCaches(keys: string[]): Promise<number> {
+        if (!keys.length) {
+            this.loggerService.log('No keys provided for clearing caches');
+            return 0;
+        }
         return await this.client.del(keys);
-    }
-
-    async addRequestCache(request: SignalRequest, ttlSeconds?: number): Promise<void> {
-        const key = request.signalCode;
-        const data = JSON.stringify(request);
-
-        try {
-            await this.addCache(key, data, ttlSeconds);
-            this.loggerService.log(`Cache added for key: ${key}`);
-        } catch (error) {
-            this.loggerService.log(`Error adding cache for key ${key}: ${error}`);
-            throw error;
-        }
-    }
-
-    async clearSignalCaches(signalCode?: string): Promise<number> {
-        if (!signalCode) {
-            this.loggerService.log(`Clearing all signal caches`);
-        }
-
-        try {
-            const targetSignalCodes = Object.keys(SSB_LIST);
-            const keys = await this.getCacheKeysFromRedis(signalCode);
-            const signalKeys = keys.filter(key => targetSignalCodes.includes(key.toLowerCase()));
-            let clearedCount = 0;
-
-            if (signalKeys.length) {
-                clearedCount = await this.clearCaches(signalKeys);
-            }
-
-            this.loggerService.log(`Cleared ${clearedCount} signal caches`);
-            return clearedCount;
-        } catch (error) {
-            console.error(`Error clearing caches for signalCode ${signalCode}:`, error);
-            throw error;
-        }
     }
 
     async disconnect(): Promise<void> {

@@ -40,3 +40,8 @@ export const CACHE_FIELDS: (keyof SignalRequest)[] = ['action', 'active', 'activ
 export enum CACHE_KEY {
     Disable_Execute = 'disableExecute',
 }
+
+export enum SWT_BULLETIN_CODE {
+    MHEAD_C = 'MHEAD_C',
+    MHEAD_E = 'MHEAD_E',
+}

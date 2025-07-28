@@ -15,6 +15,57 @@ class MindsService {
         this.loggerService = LoggerService.create.bind(MindsService)();
     }
 
+    async getRecentCache(signalCode: string): Promise<SignalRequest | undefined> {
+        try {
+            const keys = await this.redisService.getCacheKeysFromRedis(signalCode);
+
+            if (!keys.length) {
+                return;
+            }
+
+            const caches = await Promise.all(
+                keys.map(async (key) => await this.redisService.getCacheData<SignalRequest>(key))
+            );
+
+            const validCaches = caches.filter((cache): cache is SignalRequest => cache !== null);
+
+            if (!validCaches.length) {
+                return;
+            }
+
+            const mostRecentCache = validCaches.sort((a, b) => {
+                const dateA = new Date(a.creationTime['#content']);
+                const dateB = new Date(b.creationTime['#content']);
+                return dateB.getTime() - dateA.getTime();
+            })[0];
+
+            return mostRecentCache;
+        } catch (error) {
+            console.error(`Error fetching caches for signalCode ${signalCode}:`, error);
+            return;
+        }
+    }
+
+    getTtlFromExpiryTime(request: SignalRequest): number | undefined {
+        if (!request.expiryTime) {
+            return;
+        }
+
+        try {
+            const [datePart, timePart] = request.expiryTime.split(' ');
+            const [day, month, year] = datePart.split('/').map(Number);
+            const [hours, minutes] = timePart.split(':').map(Number);
+            const expiryDate = new Date(year, month - 1, day, hours, minutes);
+            const now = new Date();
+            const diffInSeconds = Math.floor((expiryDate.getTime() - now.getTime()) / 1000);
+
+            return diffInSeconds;
+        } catch (error) {
+            console.error('Error parsing expiry time:', error);
+            return;
+        }
+    }
+
     async getSignalRequests(): Promise<SignalRequest[]> {
         try {
             const response = await customAxios.get(this.apiUrl);
@@ -30,7 +81,7 @@ class MindsService {
             this.loggerService.log(`uniqueRequests count: ${uniqueRequests.length}`);
 
             const validRequests = uniqueRequests.filter(req => {
-                const expiryTtl = this.redisService.getTtlFromExpiryTime(req);
+                const expiryTtl = this.getTtlFromExpiryTime(req);
                 return !expiryTtl || expiryTtl > 0;
             });
             this.loggerService.log(`validRequests count: ${validRequests.length}`);
@@ -57,10 +108,10 @@ class MindsService {
         try {
             const rollbackRequests: RollbackRequest[] = [];
 
-            for (const request of requests) {
-                const recentCache = await this.redisService.getRecentCache(request.signalCode);
+            for (const { id, signalCode } of requests) {
+                const recentCache = await this.getRecentCache(signalCode);
 
-                if (recentCache && parseInt(request.id) < parseInt(recentCache.id)) {
+                if (recentCache && parseInt(id) < parseInt(recentCache.id)) {
                     const rollbackRequest = { ...recentCache, rollbackBy: recentCache.createdBy };
                     rollbackRequests.push(rollbackRequest);
                 }
@@ -81,7 +132,7 @@ class MindsService {
             let cacheMiss = 0;
 
             for (const request of requests) {
-                const recentCache = await this.redisService.getRecentCache(request.signalCode);
+                const recentCache = await this.getRecentCache(request.signalCode);
 
                 if (recentCache && recentCache.id === request.id) {
                     cacheHit += 1;
