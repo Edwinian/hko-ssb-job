@@ -1,4 +1,4 @@
-import { SIGNAL_ACTION, SWT_BULLETIN_CODE } from './constants';
+import { Bulletin_Status, SIGNAL_ACTION, SWT_BULLETIN_CODE } from './constants';
 
 export interface SignalResponse {
   SignalRequestList: SignalRequestList
@@ -95,7 +95,7 @@ export interface SpecialWeatherTip {
 export interface BulletinSubmit {
   sendTime: string;
   submitContent: string;
-  status: string;
+  status: Bulletin_Status;
   bullCode: SWT_BULLETIN_CODE;
   bullName: string;
   snapId: number;

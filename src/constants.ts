@@ -45,3 +45,8 @@ export enum SWT_BULLETIN_CODE {
     MHEAD_C = 'MHEAD_C',
     MHEAD_E = 'MHEAD_E',
 }
+
+export enum Bulletin_Status {
+    PROCESSED = 'PROCESSED',
+    SUBMITTED = 'SUBMITTED',
+}

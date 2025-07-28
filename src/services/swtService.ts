@@ -5,11 +5,11 @@ import LoggerService from './loggerService';
 import { BulletinSubmit, RocketChatResponse, SpecialWeatherTip } from '../types';
 import { Request, Response } from 'express';
 import RocketChatService from './rocketChatService';
-import { SWT_BULLETIN_CODE } from '../constants';
+import { Bulletin_Status, SWT_BULLETIN_CODE } from '../constants';
 
 class SwtService {
     //  prod = vega2, dev = mindsdev1
-    private readonly apiUrl: string = 'http://vega2:8080/adminConsole/rest/bulletin/BulletinService/findStoppableSnapshotWithDetails'
+    private readonly apiUrl: string = 'http://mindsdev1:8080/adminConsole/rest/bulletin/BulletinService/findStoppableSnapshotWithDetails'
     private readonly redisService: RedisService;
     private readonly loggerService: LoggerService;
     private readonly rocketChatService: RocketChatService;
@@ -140,8 +140,12 @@ class SwtService {
     }
 
     async parseBulletinXml(
-        { id, submitContent, bullCode }: BulletinSubmit
-    ): Promise<SpecialWeatherTip> {
+        { id, submitContent, bullCode, status }: BulletinSubmit
+    ): Promise<SpecialWeatherTip[]> {
+        if (status === Bulletin_Status.PROCESSED) {
+            return [];
+        }
+
         try {
             // Decode base64 to UTF-8 string
             const decodedString = Buffer.from(submitContent, 'base64').toString('utf-8');
@@ -152,57 +156,32 @@ class SwtService {
                 trim: true,
             });
             const bullCodeMessages: Record<string, string>[] = Object.values(parsedXml[bullCode])
-            const validMessages = bullCodeMessages.filter((({ MsgContent }: Record<string, string>) => !!MsgContent));
-            const targetMessage = validMessages
-                .reduce((latest: Record<string, string>, message: Record<string, string>) => {
-                    if (!message.MsgContent) {
-                        return latest;
-                    }
-
-                    // Combine IssueDate and IssueTime into Date objects for comparison
-                    const latestDateTime = new Date(
-                        `${latest.IssueDate} ${latest.IssueTime.replace(/(\d{2})(\d{2})/, '$1:$2')}`
-                    );
-                    const messageDateTime = new Date(
-                        `${message.IssueDate} ${message.IssueTime.replace(/(\d{2})(\d{2})/, '$1:$2')}`
-                    );
-
-                    if (
-                        !isNaN(latestDateTime.getTime()) &&
-                        !isNaN(messageDateTime.getTime()) &&
-                        messageDateTime > latestDateTime
-                    ) {
-                        return message;
-                    }
-
-                    return latest;
-                }, validMessages[0]);
-
-            return {
+            const validMessages = bullCodeMessages.filter(((message: Record<string, string>) => !!message.MsgContent));
+            return validMessages.map(message => ({
                 id,
                 BullCode: bullCode,
-                IssueDate: targetMessage.IssueDate || '',
-                IssueTime: targetMessage.IssueTime || '',
-                ValidDate: targetMessage.ValidDate || '',
-                ValidTime: targetMessage.ValidTime || '',
-                MsgTag: targetMessage.MsgTag || '',
-                MsgUrl: targetMessage.MsgUrl === 'true',
-                MsgContent: targetMessage.MsgContent || '',
-                MsgSeq: parseInt(targetMessage.MsgSeq, 10) || 0,
-                WeatherHeadline: targetMessage.WeatherHeadline === 'true',
-                Action: targetMessage.Action || '',
-                TwitterPost: targetMessage.TwitterPost || '',
-                WeiboPost: targetMessage.WeiboPost || '',
-                MsgTwitter: targetMessage.MsgTwitter || '',
-                MsgWeibo: targetMessage.MsgWeibo || '',
-                TopMost: Array.isArray(targetMessage.TopMost)
-                    ? targetMessage.TopMost.map((val: string) => val === 'true')
-                    : [targetMessage.TopMost === 'true'],
-                IsPushNoti: Array.isArray(targetMessage.IsPushNoti)
-                    ? targetMessage.IsPushNoti.map((val: string) => val === 'true')
-                    : [targetMessage.IsPushNoti === 'true'],
-                Unchange: targetMessage.Unchange || '',
-            }
+                IssueDate: message.IssueDate || '',
+                IssueTime: message.IssueTime || '',
+                ValidDate: message.ValidDate || '',
+                ValidTime: message.ValidTime || '',
+                MsgTag: message.MsgTag || '',
+                MsgUrl: message.MsgUrl === 'true',
+                MsgContent: message.MsgContent,
+                MsgSeq: parseInt(message.MsgSeq, 10) || 0,
+                WeatherHeadline: message.WeatherHeadline === 'true',
+                Action: message.Action || '',
+                TwitterPost: message.TwitterPost || '',
+                WeiboPost: message.WeiboPost || '',
+                MsgTwitter: message.MsgTwitter || '',
+                MsgWeibo: message.MsgWeibo || '',
+                TopMost: Array.isArray(message.TopMost)
+                    ? message.TopMost.map((val: string) => val === 'true')
+                    : [message.TopMost === 'true'],
+                IsPushNoti: Array.isArray(message.IsPushNoti)
+                    ? message.IsPushNoti.map((val: string) => val === 'true')
+                    : [message.IsPushNoti === 'true'],
+                Unchange: message.Unchange || '',
+            }))
         } catch (error: any) {
             throw new Error(`Failed to decode base64 or parse XML: ${error.message}`);
         }
@@ -239,7 +218,7 @@ class SwtService {
                     .map((bulletin) => this.parseBulletinXml(bulletin))
             );
 
-            return tips
+            return tips.flat()
         } catch (error: any) {
             console.error('Error details:', error);
             throw error;
