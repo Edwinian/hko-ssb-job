@@ -1,4 +1,4 @@
-import { SIGNAL_ACTION } from '../constants';
+import { SIGNAL_ACTION, SWT_BULLETIN_CODE } from '../constants';
 import { Attachment, RocketChatResponse, SignalRequest, SpecialWeatherTip } from '../types';
 import axios from 'axios';
 import customAxios from '../customAxios';
@@ -119,7 +119,7 @@ class RocketChatService {
         return `預報員${ct}${utter}${followUtter}${signalactiondesc}${signaldesc}${followsignaldesc}。\n`;
     }
 
-    private convertToChineseTime(time: string): string | undefined {
+    private mapSwtTimeToTitleTime(time: string, bullCode: SWT_BULLETIN_CODE): string | undefined {
         try {
             if (!time) {
                 return "";
@@ -132,9 +132,25 @@ class RocketChatService {
             const hours = parseInt(time.slice(0, 2), 10);
             const minutes = time.slice(2, 4);
 
-            const period = hours < 12 ? '上午' : '下午';
+            const am = {
+                [SWT_BULLETIN_CODE.MHEAD_C]: '上午',
+                [SWT_BULLETIN_CODE.MHEAD_E]: 'AM',
+            }
+            const pm = {
+                [SWT_BULLETIN_CODE.MHEAD_C]: '下午',
+                [SWT_BULLETIN_CODE.MHEAD_E]: 'PM',
+            }
+            const period = hours < 12 ? am[bullCode] : pm[bullCode];
             const formattedHours = (hours % 12 || 12).toString().padStart(2, '0');
-            return `${period}${formattedHours}:${minutes}`;
+
+            switch (bullCode) {
+                case SWT_BULLETIN_CODE.MHEAD_C:
+                    return `${period}${formattedHours}:${minutes}`;
+                case SWT_BULLETIN_CODE.MHEAD_E:
+                    return `${formattedHours}:${minutes} ${period}`;
+                default:
+                    return ""
+            }
         } catch (error: any) {
             console.warn(`Failed to convert to Chinese time format: ${error.message}`);
             return "";
@@ -142,14 +158,25 @@ class RocketChatService {
     }
 
     private get_tip_title(tip: SpecialWeatherTip): string {
-        const activeTime = this.convertToChineseTime(tip.IssueTime);
-        const expiryTime = this.convertToChineseTime(tip.ValidTime);
+        const activeTime = this.mapSwtTimeToTitleTime(tip.IssueTime, tip.BullCode);
+        const expiryTime = this.mapSwtTimeToTitleTime(tip.ValidTime, tip.BullCode);
         const tipcreationtime = this.convertDate2(tip.creationTime);
         const creationTimeDesc = this.getTimeDesc(tipcreationtime);
         const ct = creationTimeDesc ? `(${creationTimeDesc})` : '';
-        const followsignaldesc = expiryTime ? `，有效時間至${expiryTime}` : '';
+        const followTipDescMap = {
+            [SWT_BULLETIN_CODE.MHEAD_C]: '，有效時間至expiryTime',
+            [SWT_BULLETIN_CODE.MHEAD_E]: ', valid until expiryTime'
+        }
+        const followTipDesc = expiryTime ? followTipDescMap[tip.BullCode].replace('expiryTime', expiryTime) : '';
 
-        return `預報員${ct}話﹕${activeTime}出以下特別天氣提示${followsignaldesc}: \n ${tip.MsgContent}`;
+        switch (tip.BullCode) {
+            case SWT_BULLETIN_CODE.MHEAD_C:
+                return `預報員${ct}話﹕${activeTime}出以下特別天氣提示${followTipDesc}:`;
+            case SWT_BULLETIN_CODE.MHEAD_E:
+                return `Forecaster${ct} said the following special weather tip will be issued at ${activeTime}${followTipDesc}:`;
+            default:
+                return ""
+        }
     }
 
     async sendMessage(payload: {
