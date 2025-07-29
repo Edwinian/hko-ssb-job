@@ -44,20 +44,19 @@ class SsbService {
     }
 
     async getAllCacheData(req: Request, res: Response) {
-        const keys = await this.redisService.getCacheKeysFromRedis();
+        const allCaches = []
+        const targetSignalCodes = Object.keys(SSB_LIST);
 
-        if (!keys.length) {
-            this.loggerService.log('No cache keys found');
-            return [];
+        for (const code of targetSignalCodes) {
+            const key = code.toUpperCase()
+            const cacheData = await this.redisService.getCacheData<SignalRequest>(key);
+
+            if (cacheData) {
+                allCaches.push(cacheData);
+            }
         }
 
-        const cacheData = await Promise.all(keys.map(key => this.redisService.getCacheData(key)));
-        const filteredData = cacheData.filter(
-            (data: unknown): data is SignalRequest =>
-                !!(data as SignalRequest).signalCode
-        );
-
-        const results = filteredData.sort((a, b) => {
+        const results = allCaches.sort((a, b) => {
             const dateA = a.creationTime?.['#content'] ? parseDate(a.creationTime['#content']) : new Date(0);
             const dateB = b.creationTime?.['#content'] ? parseDate(b.creationTime['#content']) : new Date(0);
             return dateB.getTime() - dateA.getTime();
