@@ -51,8 +51,11 @@ class SsbService {
             return [];
         }
 
-        const cacheData = await Promise.all(keys.map(key => this.redisService.getCacheData<SignalRequest>(key)));
-        const filteredData = cacheData.filter((data) => !!data && typeof data !== 'string');
+        const cacheData = await Promise.all(keys.map(key => this.redisService.getCacheData(key)));
+        const filteredData = cacheData.filter(
+            (data: unknown): data is SignalRequest =>
+                !!(data as SignalRequest).signalCode
+        );
 
         const results = filteredData.sort((a, b) => {
             const dateA = a.creationTime?.['#content'] ? parseDate(a.creationTime['#content']) : new Date(0);
