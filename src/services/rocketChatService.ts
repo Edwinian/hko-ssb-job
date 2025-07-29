@@ -102,8 +102,8 @@ class RocketChatService {
         };
         const followsignaldescMap: Record<string, string> = {
             [SIGNAL_ACTION.Issue]: this.getExpiryTimeDesc(signalexpirytime),
-            [SIGNAL_ACTION.Cancel]: this.getExpiryTimeDesc(signalexpirytime),
-            [SIGNAL_ACTION.Extend]: '',
+            [SIGNAL_ACTION.Cancel]: '',
+            [SIGNAL_ACTION.Extend]: this.getExpiryTimeDesc(signalexpirytime),
         };
 
         let utter = "話﹕"

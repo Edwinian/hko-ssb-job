@@ -5,7 +5,7 @@ import LoggerService from './loggerService';
 import { BulletinSubmit, RocketChatResponse, SpecialWeatherTip } from '../types';
 import { Request, Response } from 'express';
 import RocketChatService from './rocketChatService';
-import { Bulletin_Status, SWT_BULLETIN_CODE } from '../constants';
+import { SWT_BULLETIN_CODE } from '../constants';
 
 class SwtService {
     //  prod = vega2, dev = mindsdev1

@@ -78,13 +78,13 @@ class MindsService {
             this.loggerService.log(`Total fetch count: ${data.SignalRequestList.SignalRequest.length}`);
 
             const uniqueRequests = this.getUniqueRequests(data.SignalRequestList.SignalRequest);
-            this.loggerService.log(`uniqueRequests count: ${uniqueRequests.length}`);
+            this.loggerService.log(`Unique signals: ${uniqueRequests.map(req => req.signalCode).join(', ')}`);
 
             const validRequests = uniqueRequests.filter(req => {
                 const expiryTtl = this.getTtlFromExpiryTime(req);
                 return !expiryTtl || expiryTtl > 0;
             });
-            this.loggerService.log(`validRequests count: ${validRequests.length}`);
+            this.loggerService.log(`Valid signals: ${validRequests.map(req => req.signalCode).join(', ')}`);
 
             return validRequests;
         } catch (error) {
