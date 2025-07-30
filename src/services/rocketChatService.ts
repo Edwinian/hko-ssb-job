@@ -87,7 +87,7 @@ class RocketChatService {
     }
 
     private get_signal_title(signalRequest: SignalRequest, isRollback: boolean = false): string {
-        const signalAction = signalRequest.action.toLowerCase();
+        const signalAction = signalRequest.action.toLowerCase() as SIGNAL_ACTION;
         const signaldesc = this.SIGNAL_DESCRIPTION[signalRequest.signalName] || signalRequest.signalName;
         const signalactiondesc = this.SIGNAL_DESCRIPTION[signalAction] || signalAction;
         const signalactivetime = this.convertDate2(signalRequest.activeTime);
@@ -95,12 +95,12 @@ class RocketChatService {
         const signalcreationtime = this.convertDate2(signalRequest.creationTime['#content']);
         const creationTimeDesc = this.getTimeDesc(signalcreationtime);
         const ct = creationTimeDesc ? `(${creationTimeDesc})` : '';
-        const followutterMap: Record<string, string> = {
+        const followutterMap: Record<SIGNAL_ACTION, string> = {
             [SIGNAL_ACTION.Issue]: this.getTimeDesc(signalactivetime),
             [SIGNAL_ACTION.Extend]: '要',
             [SIGNAL_ACTION.Cancel]: this.getTimeDesc(signalexpirytime),
         };
-        const followsignaldescMap: Record<string, string> = {
+        const followsignaldescMap: Record<SIGNAL_ACTION, string> = {
             [SIGNAL_ACTION.Issue]: this.getExpiryTimeDesc(signalexpirytime),
             [SIGNAL_ACTION.Cancel]: '',
             [SIGNAL_ACTION.Extend]: this.getExpiryTimeDesc(signalexpirytime),
