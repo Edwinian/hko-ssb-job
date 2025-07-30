@@ -97,8 +97,8 @@ class RocketChatService {
         const ct = creationTimeDesc ? `(${creationTimeDesc})` : '';
         const followutterMap: Record<string, string> = {
             [SIGNAL_ACTION.Issue]: this.getTimeDesc(signalactivetime),
-            [SIGNAL_ACTION.Cancel]: '要',
-            [SIGNAL_ACTION.Extend]: this.getTimeDesc(signalexpirytime),
+            [SIGNAL_ACTION.Extend]: '要',
+            [SIGNAL_ACTION.Cancel]: this.getTimeDesc(signalexpirytime),
         };
         const followsignaldescMap: Record<string, string> = {
             [SIGNAL_ACTION.Issue]: this.getExpiryTimeDesc(signalexpirytime),
