@@ -1,5 +1,5 @@
 import { SIGNAL_ACTION, SWT_BULLETIN_CODE } from '../constants';
-import { Attachment, RocketChatResponse, SignalRequest, SpecialWeatherTip } from '../types';
+import { Attachment, RocketChatResponse, TargetCodeType, SignalRequest, SpecialWeatherTip } from '../types';
 import axios from 'axios';
 import customAxios from '../customAxios';
 
@@ -228,7 +228,41 @@ class RocketChatService {
         };
 
         if (signalRequest.signalIcon && !signalRequest.signalIcon.startsWith('no_cartoon')) {
+            //// Mapping to icons from https://www.hko.gov.hk/tc/wxinfo/dailywx/warnlegend.htm
+            // const codeIconUrlMap: Record<TargetCodeType, string> = {
+            //     wcold: "https://www.hko.gov.hk/tc/wxinfo/dailywx/images/cold.gif",
+            //     wfirer: "https://www.hko.gov.hk/tc/wxinfo/dailywx/images/firer.gif",
+            //     wfirey: "https://www.hko.gov.hk/tc/wxinfo/dailywx/images/firey.gif",
+            //     wfntsa: "",
+            //     wfrost: "https://www.hko.gov.hk/tc/wxinfo/dailywx/images/frost.gif",
+            //     whot: "https://www.hko.gov.hk/tc/wxinfo/dailywx/images/vhot.gif",
+            //     whota: "",
+            //     rrain: "",
+            //     wl: "https://www.hko.gov.hk/tc/wxinfo/dailywx/images/landslip.gif",
+            //     rhinf: "", // Additional Information
+            //     wraina: "https://www.hko.gov.hk/tc/wxinfo/dailywx/images/raina.gif",
+            //     wrainb: "https://www.hko.gov.hk/tc/wxinfo/dailywx/images/rainb.gif",
+            //     wrainr: "https://www.hko.gov.hk/tc/wxinfo/dailywx/images/rainr.gif",
+            //     tc1: "https://www.hko.gov.hk/tc/wxinfo/dailywx/images/tc1.gif",
+            //     tc3: "https://www.hko.gov.hk/tc/wxinfo/dailywx/images/tc3.gif",
+            //     tc10: "https://www.hko.gov.hk/tc/wxinfo/dailywx/images/tc10.gif",
+            //     tcpre8up: "",
+            //     tc8ne: "https://www.hko.gov.hk/tc/wxinfo/dailywx/images/tc8ne.gif",
+            //     tc8nw: "https://www.hko.gov.hk/tc/wxinfo/dailywx/images/tc8d.gif",
+            //     tc8se: "https://www.hko.gov.hk/tc/wxinfo/dailywx/images/tc8b.gif",
+            //     tc8sw: "https://www.hko.gov.hk/tc/wxinfo/dailywx/images/tc8c.gif",
+            //     tc9: "https://www.hko.gov.hk/tc/wxinfo/dailywx/images/tc9.gif",
+            //     wts: "https://www.hko.gov.hk/tc/wxinfo/dailywx/images/ts.gif",
+            //     wtips: "",
+            //     wmsgnl_monsoon: "https://www.hko.gov.hk/tc/wxinfo/dailywx/images/sms.gif",
+            //     wtm: "https://www.hko.gov.hk/tc/wxinfo/dailywx/images/tsunami-warn.gif",
+            // };
+            // const iconUrl = codeIconUrlMap[signalRequest.signalCode.toLowerCase() as TargetCodeType]
+            // if (iconUrl) {
+            //     attachment.thumb_url = iconUrl;
+            // }
             attachment.thumb_url = `https://demo.f22services.hko.gov.hk/minds/signalimage/${signalRequest.signalIcon}`;
+
         }
 
         const payload = {

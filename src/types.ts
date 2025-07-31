@@ -1,4 +1,4 @@
-import { Bulletin_Status, SIGNAL_ACTION, SWT_BULLETIN_CODE } from './constants';
+import { Bulletin_Status, SIGNAL_ACTION, SSB_LIST, SWT_BULLETIN_CODE } from './constants';
 
 export interface SignalResponse {
   SignalRequestList: SignalRequestList
@@ -12,6 +12,8 @@ export interface SignalTimeObject {
   '#content': string;
   '-class': string;
 }
+
+export type TargetCodeType = keyof typeof SSB_LIST
 
 export interface SignalRequest {
   action: SIGNAL_ACTION;
